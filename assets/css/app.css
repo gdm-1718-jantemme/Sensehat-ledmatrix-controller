@@ -1,0 +1,15 @@
+#blocks-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#blocks-container div {
+    display: flex;
+    flex-direction: row;
+}
+
+#blocks-container div input{
+    width: 40px;
+    height: 40px;
+    border: none;
+}
