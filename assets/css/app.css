@@ -1,3 +1,10 @@
+body {
+    background-color: lightslategray;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 #blocks-container {
     display: flex;
     flex-direction: column;
