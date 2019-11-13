@@ -23,6 +23,7 @@ let currentRefId
 for (const row of rows) {
     for (const item of row.children) {
         item.addEventListener("change", (e) => {
+            console.log('changes')
             color = e.target.value;
 
             numbers.forEach((number, index) => {
@@ -39,6 +40,7 @@ for (const row of rows) {
                 'color': color
             };
             selectedPixels.push(ledObject);
+            console.log(pushRealtime)
             if(pushRealtime) {
                 if(currentRefId) {
                     db.collection("characters").doc(currentRefId).update({
@@ -73,25 +75,91 @@ const clearPixels = () => {
 
 const submitCharacter = () => {
     if(selectedPixels.length > 0) {
+        console.log(pushRealtime)
+        if(!pushRealtime) {
+            console.log(selectedPixels)
+            db.collection("characters").add({
+                "current": false,
+                "pixels": selectedPixels
+            })
+            .then(function(docRef) {
+                console.log("Document written with ID: ", docRef.id);
+            })
+            .catch(function(error) {
+                console.error("Error adding document: ", error);
+            });
+        }
         document.getElementById("pushRealtime").checked = false
-        console.log(selectedPixels)
-        db.collection("characters").add({
-            "pixels": selectedPixels
-        })
-        .then(function(docRef) {
-            console.log("Document written with ID: ", docRef.id);
-        })
-        .catch(function(error) {
-            console.error("Error adding document: ", error);
-        });
+        toggleRealtime()
         clearPixels()
+        loadCharacters()
     }
 }
 
 const toggleRealtime = () => {
+    console.log('pushed')
     if(document.getElementById("pushRealtime").checked) {
         pushRealtime = true
     } else {
         pushRealtime = false
     }
+    console.log(pushRealtime)
 }
+
+const loadCharacters = async() => {
+    const container = document.getElementById('charactersList')
+    const snapshot = await db.collection('characters').get()
+
+    container.innerHTML = ""
+
+    snapshot.docs.map(doc => {
+        const character = document.createElement('div');
+        character.className = "character"
+        character.id = doc.id
+
+        character.onclick = function() { 
+            loadClickedCharacter(this.id)
+        }
+        for(let y = 0; y < 8; y++) {
+            for(let x = 0; x < 8; x++) {
+                const div = document.createElement('div');
+                div.className = 'pixel';
+                doc.data().pixels.forEach(pixel => {
+                    if(pixel.x == x && pixel.y == y) {
+                        div.style.backgroundColor = pixel.color
+                    }
+                });
+                character.appendChild(div)
+            }
+        }
+        container.appendChild(character)
+    })
+}
+
+const loadClickedCharacter = (id) => {
+    var characterRef = db.collection("characters").doc(id);
+    characterRef.get().then(function(doc) {
+        if (doc.exists) {
+            let current = doc.data().current
+            console.log(current)
+            console.log(!current)
+
+            characterRef.update({
+                current: !current
+            })
+            .then(function() {
+                console.log("Document successfully updated!");
+            })
+            .catch(function(error) {
+                console.error("Error updating document: ", error);
+            });
+        } else {
+            // doc.data() will be undefined in this case
+            console.log("No such document!");
+        }
+    }).catch(function(error) {
+        console.log("Error getting document:", error);
+    });
+}
+
+loadCharacters()
